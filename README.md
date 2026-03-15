@@ -96,9 +96,19 @@ The pipeline writes to `.remember/` (created automatically, self-gitignored):
 
 ## Configuration
 
-| Environment variable | Default | Purpose                                       |
-| -------------------- | ------- | --------------------------------------------- |
-| `MEMORY_DEBUG`       | `1`     | Set to `0` to silence cooldown/lock log lines |
+Copy `config.example.json` to `config.json` and adjust:
+
+| Key                              | Default | Purpose                                            |
+| -------------------------------- | ------- | -------------------------------------------------- |
+| `data_dir`                       | `.remember` | Where output files are written                 |
+| `cooldowns.save_seconds`         | `120`   | Minimum seconds between saves                      |
+| `cooldowns.ndc_seconds`          | `3600`  | Compression interval (hourly)                      |
+| `thresholds.min_human_messages`  | `3`     | Minimum messages before saving                     |
+| `thresholds.delta_lines_trigger` | `50`    | Tool call output lines that trigger auto-save      |
+| `features.ndc_compression`      | `true`  | Enable hourly compression of daily files           |
+| `features.recovery`             | `true`  | Recover missed saves on session start              |
+| `timezone`                       | `UTC`   | Timezone for timestamps and daily file boundaries  |
+| `debug`                          | `false` | Verbose logging for cooldowns and locks            |
 
 ## Running tests
 
