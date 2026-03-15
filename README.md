@@ -1,6 +1,10 @@
 # Continuous Memory for Claude Code
 
-A pipeline that gives Claude Code persistent memory across sessions. Sessions are extracted, summarized by Haiku, and compressed into layered daily files that load at startup.
+Claude Code starts every session blank. It doesn't know what you worked on yesterday, what conventions your team follows, or what mistakes it already made. You re-explain everything, every time.
+
+Claude Remember fixes that. It hooks into Claude Code's lifecycle — saving sessions automatically, compressing them through Haiku into layered daily summaries, and loading them back into context on the next session start. No manual prompting, no copy-pasting notes. The agent starts every session with its history already present.
+
+The result: your Claude Code instance develops continuity. It remembers what it learned, what broke, what worked. Not perfect recall — compressed, practical memory that fits in minimal tokens.
 
 ## How it works
 
