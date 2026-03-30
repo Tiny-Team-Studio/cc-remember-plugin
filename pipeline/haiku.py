@@ -98,8 +98,33 @@ def _parse_response(raw: str) -> HaikuResult:
     except json.JSONDecodeError as e:
         raise RuntimeError(f"invalid JSON from claude: {e}")
 
-    text = data.get("result") or ""
-    tokens = _extract_tokens(data)
+    # Claude CLI v2.1.86+ returns a list of message objects instead of a
+    # dict with a "result" key.  Normalize both formats.
+    if isinstance(data, list):
+        # Find the last assistant message with text content
+        text = ""
+        for msg in reversed(data):
+            if msg.get("type") == "result":
+                text = msg.get("result", "") or ""
+                break
+            content = msg.get("content", "")
+            if isinstance(content, str) and content.strip():
+                text = content
+                break
+            if isinstance(content, list):
+                parts = [
+                    b.get("text", "")
+                    for b in content
+                    if isinstance(b, dict) and b.get("type") == "text"
+                ]
+                if parts:
+                    text = "\n".join(parts)
+                    break
+        tokens = _extract_tokens(data[-1] if data else {})
+    else:
+        text = data.get("result") or ""
+        tokens = _extract_tokens(data)
+
     is_skip = text.strip().upper().startswith("SKIP")
 
     return HaikuResult(text=text, tokens=tokens, is_skip=is_skip)

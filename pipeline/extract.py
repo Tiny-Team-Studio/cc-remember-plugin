@@ -95,7 +95,7 @@ def get_last_save_line(session_id: str,
     if not os.path.exists(path):
         return 0
     try:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         if data.get("session") == session_id:
             return data.get("line", 0)
@@ -114,7 +114,7 @@ def count_lines(path: str) -> int:
         Number of lines in the file.
     """
     count = 0
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         for _ in f:
             count += 1
     return count
@@ -140,7 +140,7 @@ def extract_messages(path: str, skip_lines: int = 0) -> list[tuple[str, str]]:
     corrupt_count = 0
 
     try:
-        f = open(path)
+        f = open(path, encoding="utf-8")
     except OSError:
         return messages
 

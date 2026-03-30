@@ -60,7 +60,7 @@ done
 
 # ── Recovery: save the most recent missed session ──────────────────────────
 if [ "$(cfg '.features.recovery' true)" = "true" ]; then
-PROJECT_PATH_SLUG="$(echo "$PROJECT" | tr '/' '-')"
+PROJECT_PATH_SLUG="$(echo "$PROJECT" | sed 's/[^a-zA-Z0-9]/-/g')"
 SESSIONS_DIR="$HOME/.claude/projects/${PROJECT_PATH_SLUG}"
 LAST_SAVE_FILE="$PROJECT/.remember/tmp/last-save.json"
 

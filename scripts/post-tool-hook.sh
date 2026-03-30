@@ -37,7 +37,7 @@ source "$PLUGIN_ROOT/scripts/log.sh" 2>/dev/null
 SAVE_SCRIPT="$PLUGIN_ROOT/scripts/save-session.sh"
 LAST_SAVE_FILE="$PROJECT/.remember/tmp/last-save.json"
 PID_FILE="$PROJECT/.remember/tmp/save-session.pid"
-SESSION_DIR="$HOME/.claude/projects/$(echo "$PROJECT" | tr '/' '-')"
+SESSION_DIR="$HOME/.claude/projects/$(echo "$PROJECT" | sed 's/[^a-zA-Z0-9]/-/g')"
 
 [ -f "$SAVE_SCRIPT" ] || exit 0
 

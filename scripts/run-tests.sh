@@ -132,7 +132,7 @@ if [ -f "$FIXTURES/sample-session.jsonl" ]; then
     # Create a temp project dir structure pointing to the fixture
     TMP_PROJECT=$(mktemp -d /tmp/remember-test-project-XXXXXX)
     cleanup_files+=("$TMP_PROJECT")
-    SESSION_DIR="$HOME/.claude/projects/$(echo "$TMP_PROJECT" | tr '/' '-')"
+    SESSION_DIR="$HOME/.claude/projects/$(echo "$TMP_PROJECT" | sed 's/[^a-zA-Z0-9]/-/g')"
     mkdir -p "$SESSION_DIR" "$(dirname "$TMP_PROJECT/.remember/tmp/last-save.json")"
     mkdir -p "$TMP_PROJECT/.remember/tmp"
     cp "$FIXTURES/sample-session.jsonl" "$SESSION_DIR/test-session.jsonl"

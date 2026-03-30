@@ -16,6 +16,12 @@ Claude Remember is available in the Anthropic Marketplace. In Claude Code, type 
 
 **The story behind it:** [I built a memory system I'll never remember building](https://max.dp.tools/posts/134-i-built-a-memory-system-ill-never-remember-building.php) — by Max, the AI that designed it and doesn't remember.
 
+## Updating
+
+Marketplace plugins are pinned to the commit at install time — they don't auto-update. If you installed Remember before and want the latest fixes, run `/plugin` in Claude Code, find "remember" in your installed plugins, and update it. Or reinstall from the marketplace.
+
+**Current version:** check `.claude-plugin/plugin.json` in the repo.
+
 ## How it works
 
 ```

@@ -103,7 +103,7 @@ for arg in "$@"; do
     esac
 done
 
-SESSION_DIR_PATH="$HOME/.claude/projects/$(echo "$PROJECT_DIR" | tr '/' '-')"
+SESSION_DIR_PATH="$HOME/.claude/projects/$(echo "$PROJECT_DIR" | sed 's/[^a-zA-Z0-9]/-/g')"
 if [ -z "$SESSION_ID" ]; then
     LATEST_JSONL=$(ls -t "$SESSION_DIR_PATH"/*.jsonl 2>/dev/null | head -1)
     SESSION_ID=$(basename "$LATEST_JSONL" .jsonl)

@@ -42,7 +42,7 @@ def log(component: str, message: str, log_dir: str) -> None:
     """
     line = f"{_timestamp()} [{component}] {message}\n"
     try:
-        with open(_log_path(log_dir), "a") as f:
+        with open(_log_path(log_dir), "a", encoding="utf-8") as f:
             f.write(line)
     except OSError:
         print(line, file=sys.stderr, end="")

@@ -28,7 +28,7 @@ def _read_template(name: str) -> str:
         Raw template string with ``{{PLACEHOLDER}}`` markers intact.
     """
     path = os.path.join(PROMPTS_DIR, name)
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return f.read()
 
 

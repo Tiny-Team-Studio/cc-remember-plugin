@@ -64,7 +64,7 @@ def cmd_extract(session_id: str, project_dir: str) -> None:
 
     # Write exchanges to temp file (avoids shell escaping of large text)
     fd, extract_file = tempfile.mkstemp(prefix="remember-extract-", suffix=".txt")
-    with os.fdopen(fd, "w") as f:
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(r.exchanges)
 
     print(f"POSITION={r.position}")
@@ -93,9 +93,9 @@ def cmd_build_prompt(
         branch: Current git branch name.
         output_file: Path where the assembled prompt will be written.
     """
-    with open(extract_file) as f:
+    with open(extract_file, encoding="utf-8") as f:
         extract = f.read().strip()
-    with open(last_entry_file) as f:
+    with open(last_entry_file, encoding="utf-8") as f:
         last_entry = f.read().strip()
 
     prompt = build_save_prompt(
@@ -104,7 +104,7 @@ def cmd_build_prompt(
         last_entry=last_entry,
         extract=extract,
     )
-    with open(output_file, "w") as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         f.write(prompt)
 
 
@@ -115,10 +115,10 @@ def cmd_build_ndc_prompt(memory_file: str, output_file: str) -> None:
         memory_file: Path to now.md (the file to be compressed).
         output_file: Path where the assembled prompt will be written.
     """
-    with open(memory_file) as f:
+    with open(memory_file, encoding="utf-8") as f:
         content = f.read()
     prompt = build_ndc_prompt(content)
-    with open(output_file, "w") as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         f.write(prompt)
 
 
@@ -143,7 +143,7 @@ def cmd_parse_haiku(output_file: str = "") -> None:
 
     # Write text to temp file (can contain newlines, quotes, anything)
     fd, text_file = tempfile.mkstemp(prefix="remember-haiku-text-", suffix=".txt")
-    with os.fdopen(fd, "w") as f:
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(r.text)
 
     print(f"HAIKU_TEXT_FILE={_shell_escape(text_file)}")
@@ -154,7 +154,7 @@ def cmd_parse_haiku(output_file: str = "") -> None:
     print(f"TK_COST={r.tokens.cost_usd:.6f}")
 
     if output_file:
-        with open(output_file, "w") as f:
+        with open(output_file, "w", encoding="utf-8") as f:
             f.write(r.text)
 
 
@@ -169,7 +169,7 @@ def cmd_save_position(last_save_file: str, session_id: str, position: int) -> No
         session_id: UUID of the session being saved.
         position: JSONL line number to resume from next time.
     """
-    with open(last_save_file, "w") as f:
+    with open(last_save_file, "w", encoding="utf-8") as f:
         json.dump({"session": session_id, "line": position}, f)
 
 
@@ -205,7 +205,7 @@ def cmd_consolidate(staging_dir: str, recent_file: str, archive_file: str) -> No
         basename = os.path.basename(path)
         if today in basename or basename.endswith(".done.md"):
             continue
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             staging_contents[basename] = f.read()
 
     if not staging_contents:
@@ -214,23 +214,23 @@ def cmd_consolidate(staging_dir: str, recent_file: str, archive_file: str) -> No
 
     recent = ""
     if os.path.exists(recent_file):
-        with open(recent_file) as f:
+        with open(recent_file, encoding="utf-8") as f:
             recent = f.read()
 
     archive = ""
     if os.path.exists(archive_file):
-        with open(archive_file) as f:
+        with open(archive_file, encoding="utf-8") as f:
             archive = f.read()
 
     result = consolidate(staging_contents, recent, archive)
 
     # Write results to temp files
     fd_r, recent_out = tempfile.mkstemp(prefix="remember-recent-", suffix=".md")
-    with os.fdopen(fd_r, "w") as f:
+    with os.fdopen(fd_r, "w", encoding="utf-8") as f:
         f.write(result.recent)
 
     fd_a, archive_out = tempfile.mkstemp(prefix="remember-archive-", suffix=".md")
-    with os.fdopen(fd_a, "w") as f:
+    with os.fdopen(fd_a, "w", encoding="utf-8") as f:
         f.write(result.archive)
 
     print(f"STAGING_COUNT={len(staging_contents)}")
