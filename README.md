@@ -1,5 +1,7 @@
 # Continuous Memory for Claude Code
 
+![1,600+ installs from the Anthropic Marketplace](docs/marketplace-1600-installs.png)
+
 Claude Code starts every session blank. It doesn't know what you worked on yesterday, what conventions your team follows, or what mistakes it already made. You re-explain everything, every time.
 
 Claude Remember fixes that. It hooks into Claude Code's lifecycle — saving sessions automatically, compressing them through Haiku into layered daily summaries, and loading them back into context on the next session start. No manual prompting, no copy-pasting notes. The agent starts every session with its history already present.
