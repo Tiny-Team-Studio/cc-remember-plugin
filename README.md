@@ -52,16 +52,16 @@ Marketplace plugins are pinned to the commit at install time — they don't auto
 
 ## How it works
 
-```
-tool use → save-session.sh → extract (Python) → summarize (Haiku) → now.md
-                                                                       ↓
-                                                            hourly NDC compression
-                                                                       ↓
-                                                              today-YYYY-MM-DD.md
-                                                                       ↓
-                                                            daily consolidation
-                                                                       ↓
-                                                              recent.md + archive.md
+```mermaid
+flowchart TD
+    A["tool use"] --> B["save-session.sh"]
+    B --> C["extract (Python)"]
+    C --> D["summarize (Haiku)"]
+    D --> E["now.md"]
+    E --> F["hourly NDC compression"]
+    F --> G["today-YYYY-MM-DD.md"]
+    G --> H["daily consolidation"]
+    H --> I["recent.md + archive.md"]
 ```
 
 Each layer compresses the one above it. Raw exchanges become one-line summaries. Daily summaries become weekly paragraphs. The result: full context in minimal tokens.
