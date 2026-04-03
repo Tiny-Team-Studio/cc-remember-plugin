@@ -20,9 +20,35 @@ Claude Remember is available in the Anthropic Marketplace. In Claude Code, type 
 
 ## Updating
 
-Marketplace plugins are pinned to the commit at install time — they don't auto-update. If you installed Remember before and want the latest fixes, run `/plugin` in Claude Code, find "remember" in your installed plugins, and update it. Or reinstall from the marketplace.
+Marketplace plugins are pinned to the commit at install time — they don't auto-update. To get the latest version:
 
-**Current version:** check `.claude-plugin/plugin.json` in the repo.
+1. In Claude Code, type `/plugin`
+2. Find "remember" in your installed plugins
+3. Select "Update" (or reinstall from the marketplace)
+
+**How to check your version:** look at the `version` field in `.claude-plugin/plugin.json`. The plugin location depends on your install type:
+
+| Install type | Location |
+|---|---|
+| Marketplace (macOS/Linux) | `~/.claude/plugins/cache/claude-plugins-official/remember/<version>/` |
+| Marketplace (Windows) | `%USERPROFILE%\.claude\plugins\cache\claude-plugins-official\remember\<version>\` |
+| Local install | `<your-project>/.claude/remember/` |
+
+### Changelog
+
+**v0.3.0** — Path resolution overhaul (fixes #9, addresses #10)
+- New `resolve-paths.sh` — single source of truth for all path resolution across local and marketplace installs
+- Marketplace installs without `CLAUDE_PROJECT_DIR` now **fail with a clear FATAL error** instead of silently computing wrong paths
+- All hooks log their resolved paths to `.remember/logs/` on every invocation
+- Hook stderr captured to `.remember/logs/hook-errors.log` via hooks.json redirect
+- 162 tests (up from 122), including realistic plugin simulation tests for both install layouts
+
+**v0.2.0** — Windows compatibility, CLI v2.1.86+ support
+- Fixed path slugging for Windows backslashes and colons
+- Added UTF-8 encoding to all Python file operations
+- Handle CLI v2+ JSON array response format in haiku.py
+
+**v0.1.0** — Initial release
 
 ## How it works
 
@@ -182,7 +208,7 @@ pipeline/           Python core — extraction, prompts, parsing, types
 
 prompts/            Prompt templates (txt with {{PLACEHOLDER}} substitution)
 scripts/            Shell orchestration — locks, cooldowns, file I/O, backgrounding
-tests/              pytest suite (122 tests, 99%+ coverage)
+tests/              pytest suite (162 tests, 99%+ coverage)
 ```
 
 ## License

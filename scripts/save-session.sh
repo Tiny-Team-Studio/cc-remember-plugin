@@ -54,9 +54,9 @@ set -e
 
 trap 'log "error" "FAILED at line $LINENO (exit $?)"' ERR
 
-PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../../.." && pwd)}"
-PIPELINE_DIR="${CLAUDE_PLUGIN_ROOT:-${PROJECT_DIR}/.claude/remember}"
+source "$(dirname "$0")/resolve-paths.sh"
 source "$(dirname "$0")/log.sh"
+log "hook" "save-session: PROJECT_DIR=$PROJECT_DIR PIPELINE_DIR=$PIPELINE_DIR"
 
 REMEMBER_TZ=$(config ".timezone" "Europe/Paris")
 

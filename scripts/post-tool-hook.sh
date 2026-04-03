@@ -28,12 +28,11 @@
 # ============================================================================
 
 # --- Resolve paths ---
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-${CLAUDE_PROJECT_DIR:-.}/.claude/remember}"
-PROJECT="${CLAUDE_PROJECT_DIR:-.}"
-PROJECT_DIR="$PROJECT"
-export CLAUDE_PROJECT_DIR="$PROJECT"
-export CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT"
+source "$(dirname "$0")/resolve-paths.sh"
+PLUGIN_ROOT="$PIPELINE_DIR"
+PROJECT="$PROJECT_DIR"
 source "$PLUGIN_ROOT/scripts/log.sh" 2>/dev/null
+log "hook" "post-tool: PROJECT_DIR=$PROJECT_DIR PIPELINE_DIR=$PIPELINE_DIR"
 SAVE_SCRIPT="$PLUGIN_ROOT/scripts/save-session.sh"
 LAST_SAVE_FILE="$PROJECT/.remember/tmp/last-save.json"
 PID_FILE="$PROJECT/.remember/tmp/save-session.pid"

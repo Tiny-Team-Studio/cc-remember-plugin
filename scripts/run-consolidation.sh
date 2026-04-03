@@ -35,9 +35,9 @@
 
 set -e
 
-PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../../.." && pwd)}"
-PIPELINE_DIR="${CLAUDE_PLUGIN_ROOT:-${PROJECT_DIR}/.claude/remember}"
+source "$(dirname "$0")/resolve-paths.sh"
 source "$(dirname "$0")/log.sh"
+log "hook" "run-consolidation: PROJECT_DIR=$PROJECT_DIR PIPELINE_DIR=$PIPELINE_DIR"
 rotate_logs
 
 REMEMBER_TZ=$(config ".timezone" "Europe/Paris")

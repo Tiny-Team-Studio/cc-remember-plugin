@@ -37,17 +37,16 @@
 #
 # ============================================================================
 
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-${CLAUDE_PROJECT_DIR:-.}/.claude/remember}"
-PROJECT="${CLAUDE_PROJECT_DIR:-.}"
-PROJECT_DIR="$PROJECT"
-export CLAUDE_PROJECT_DIR="$PROJECT"
-export CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT"
+source "$(dirname "$0")/resolve-paths.sh"
+PLUGIN_ROOT="$PIPELINE_DIR"
+PROJECT="$PROJECT_DIR"
 CONFIG="$PLUGIN_ROOT/config.json"
 # Read a config value from config.json. Falls back to $2 if missing.
 cfg() { jq -r "$1 // empty" "$CONFIG" 2>/dev/null || echo "$2"; }
 source "$PLUGIN_ROOT/scripts/log.sh" 2>/dev/null
 REMEMBER_TZ=$(cfg ".timezone" "Europe/Paris")
 TODAY=$(TZ="$REMEMBER_TZ" date '+%Y-%m-%d')
+log "hook" "session-start: PROJECT_DIR=$PROJECT_DIR PIPELINE_DIR=$PIPELINE_DIR"
 
 # ── Dispatch: before_session_start ────────────────────────────────────────
 dispatch "before_session_start"
