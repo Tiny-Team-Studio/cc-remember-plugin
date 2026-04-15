@@ -232,7 +232,8 @@ if [ "$RUN_NDC" = true ]; then
     cd "$PIPELINE_DIR" && $PYTHON -m pipeline.shell build-ndc-prompt "$MEMORY_FILE" "$NDC_PROMPT"
 
     if [ -s "$NDC_PROMPT" ]; then
-        (NDC_ERR=$(mktemp "${TMPDIR:-/tmp}"/remember-ndc-err-XXXXXX.txt)
+        (set +e  # don't inherit set -e — claude -p non-zero exit must not kill the subshell
+            NDC_ERR=$(mktemp "${TMPDIR:-/tmp}"/remember-ndc-err-XXXXXX.txt)
             NDC_JSON=$(cd /tmp && env -u CLAUDECODE claude -p \
                 --allowedTools "" --model haiku --max-turns 1 \
                 --output-format json \

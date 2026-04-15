@@ -845,6 +845,56 @@ class TestRealisticPluginSimulation:
         log = self._read_log(project)
         assert "[hook] session-start:" in log, f"Missing hook log entry: {log[:300]}"
 
+    def test_session_start_creates_gitignore(self, tmp_path):
+        """session-start-hook.sh creates .remember/.gitignore before any save (#17)."""
+        project = os.path.join(str(tmp_path), "my-project")
+        plugin = os.path.join(project, ".claude", "remember")
+        os.makedirs(os.path.join(plugin, "scripts"))
+        _create_full_plugin_copy(plugin)
+        _create_full_project(project)
+        # Remove .gitignore if it exists to prove session-start creates it
+        gitignore = os.path.join(project, ".remember", ".gitignore")
+        if os.path.exists(gitignore):
+            os.remove(gitignore)
+
+        env = {k: v for k, v in os.environ.items()
+               if k not in ("CLAUDE_PROJECT_DIR", "CLAUDE_PLUGIN_ROOT")}
+        env["HOME"] = str(tmp_path)
+        result = _run_hook_like_claude_code(plugin, "session-start-hook.sh", env)
+        assert result.returncode == 0, f"stderr: {result.stderr[:300]}"
+        assert os.path.exists(gitignore), ".remember/.gitignore not created by session-start-hook"
+        with open(gitignore) as f:
+            assert f.read().strip() == "*", ".gitignore should contain '*'"
+
+    def test_ndc_subshell_disables_set_e(self):
+        """NDC subshell must have set +e to survive claude -p failures (#14)."""
+        save_script = os.path.join(
+            os.path.dirname(__file__), "..", "scripts", "save-session.sh"
+        )
+        with open(save_script) as f:
+            content = f.read()
+        # Find the NDC subshell — it starts with '(set +e' or '(' followed by
+        # 'set +e', and contains 'claude -p' and ends with ') &'
+        in_ndc = False
+        found_set_plus_e = False
+        for line in content.splitlines():
+            stripped = line.strip()
+            if "set +e" in stripped and not in_ndc:
+                # Check if this is inside a subshell (line starts with '(')
+                if stripped.startswith("("):
+                    in_ndc = True
+                    found_set_plus_e = True
+            if "NDC_ERR=$(mktemp" in stripped:
+                in_ndc = True
+            if in_ndc and "set +e" in stripped:
+                found_set_plus_e = True
+            if in_ndc and ") &" in stripped:
+                break  # end of subshell
+        assert found_set_plus_e, (
+            "NDC subshell in save-session.sh must contain 'set +e' "
+            "to prevent inherited set -e from killing it on claude -p failure"
+        )
+
     def test_post_tool_hook_marketplace(self, tmp_path):
         """post-tool-hook.sh in marketplace layout — succeeds and logs."""
         project = os.path.join(str(tmp_path), "Users", "dev", "my-project")

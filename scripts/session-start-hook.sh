@@ -57,6 +57,7 @@ rm -f "$PROJECT/.remember/tmp/save-session.pid"
 for DIR in "$PROJECT/.remember/tmp" "$PROJECT/.remember/logs" "$PROJECT/.remember/logs/autonomous"; do
     mkdir -p "$DIR" 2>/dev/null
 done
+[ -f "$PROJECT/.remember/.gitignore" ] || echo '*' > "$PROJECT/.remember/.gitignore"
 
 # ── Recovery: save the most recent missed session ──────────────────────────
 if [ "$(cfg '.features.recovery' true)" = "true" ]; then
