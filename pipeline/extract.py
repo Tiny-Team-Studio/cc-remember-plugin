@@ -163,7 +163,10 @@ def extract_messages(path: str, skip_lines: int = 0) -> list[tuple[str, str]]:
 
             msg_type = obj.get("type")
             is_meta = obj.get("isMeta", False)
-            if msg_type not in ("user", "assistant") or is_meta:
+            is_channel = obj.get("origin", {}).get("kind") == "channel"
+            if msg_type not in ("user", "assistant"):
+                continue
+            if is_meta and not is_channel:
                 continue
 
             content = obj.get("message", {}).get("content", "")
