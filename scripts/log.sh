@@ -130,6 +130,7 @@ config() {
 }
 
 REMEMBER_TZ=$(config ".timezone" "Europe/Paris")
+export TZ="$REMEMBER_TZ"
 
 # Dispatch a lifecycle event to all registered hooks.
 #

@@ -154,8 +154,7 @@ fi
 
 # --- Step 3: Build prompt ---
 BRANCH=$(cd "$PROJECT_DIR" && git branch --show-current 2>/dev/null || echo "unknown")
-export TZ="$REMEMBER_TZ"
-CURRENT_TIME=$(date +%H:%M)
+CURRENT_TIME=$(TZ="${REMEMBER_TZ:-Europe/Amsterdam}" date +%H:%M)
 TMP_PROMPT=$(mktemp "${TMPDIR:-/tmp}"/remember-prompt-XXXXXX.txt)
 CLEANUP_FILES+=("$TMP_PROMPT")
 
