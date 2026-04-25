@@ -1,2 +1,8 @@
-=== REMEMBER ===
-History in .remember/: now.md (buffer), today-*.md (daily), recent.md (7d), archive.md (old), core-memories.md (key moments). Search on user request.
+=== SESSION MEMORY ===
+Below is your memory of previous conversations from this project. It is automatically maintained — you don't need to manage it. Use it to:
+- Recall what was discussed earlier today or in recent days
+- Maintain continuity across session resets (after /clear or container restarts)
+- Answer questions like "what did we talk about?" or "what happened today?"
+
+Files: now.md (current session buffer), today-*.md (today's compressed entries), recent.md (last 7 days), archive.md (older).
+If the user asks about something and the injected memory below doesn't cover it, read the files in .remember/ directly for more detail.
