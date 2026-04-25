@@ -154,7 +154,8 @@ fi
 
 # --- Step 3: Build prompt ---
 BRANCH=$(cd "$PROJECT_DIR" && git branch --show-current 2>/dev/null || echo "unknown")
-CURRENT_TIME=$(TZ="${REMEMBER_TZ:-Europe/Amsterdam}" date +%H:%M)
+CURRENT_TIME=$(date -d "now" +%H:%M 2>/dev/null || date +%H:%M)
+[ -n "$REMEMBER_TZ" ] && CURRENT_TIME=$(python3 -c "from datetime import datetime; import zoneinfo; print(datetime.now(zoneinfo.ZoneInfo('$REMEMBER_TZ')).strftime('%H:%M'))")
 TMP_PROMPT=$(mktemp "${TMPDIR:-/tmp}"/remember-prompt-XXXXXX.txt)
 CLEANUP_FILES+=("$TMP_PROMPT")
 
