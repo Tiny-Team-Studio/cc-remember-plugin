@@ -17,7 +17,6 @@ from pipeline.shell import (
     cmd_build_prompt,
     cmd_consolidate,
     cmd_extract,
-    cmd_parse_haiku,
     cmd_save_position,
     main,
 )
@@ -36,51 +35,6 @@ def test_shell_escape_with_quotes():
 
 def test_shell_escape_empty():
     assert _shell_escape("") == "''"
-
-
-def test_cmd_parse_haiku_normal(capsys):
-    haiku_json = json.dumps({
-        "result": "## 10:30 | did stuff\ndetails here",
-        "usage": {
-            "input_tokens": 500,
-            "output_tokens": 100,
-            "cache_read_input_tokens": 200,
-        },
-        "total_cost_usd": 0.005,
-    })
-    with patch("sys.stdin", StringIO(haiku_json)):
-        cmd_parse_haiku()
-    output = capsys.readouterr().out
-    assert "IS_SKIP=false" in output
-    assert "TK_IN=500" in output
-    assert "TK_OUT=100" in output
-    assert "TK_CACHE=200" in output
-    assert "HAIKU_TEXT_FILE=" in output
-    # Verify the text file was created with correct content
-    for line in output.strip().split("\n"):
-        if line.startswith("HAIKU_TEXT_FILE="):
-            path = line.split("=", 1)[1].strip("'")
-            content = open(path).read()
-            assert "## 10:30 | did stuff" in content
-            os.unlink(path)
-            break
-
-
-def test_cmd_parse_haiku_skip(capsys):
-    haiku_json = json.dumps({
-        "result": "SKIP — duplicate",
-        "input_tokens": 100,
-        "output_tokens": 10,
-        "cache_read_input_tokens": 0,
-    })
-    with patch("sys.stdin", StringIO(haiku_json)):
-        cmd_parse_haiku()
-    output = capsys.readouterr().out
-    assert "IS_SKIP=true" in output
-    # cleanup
-    for line in output.strip().split("\n"):
-        if line.startswith("HAIKU_TEXT_FILE="):
-            os.unlink(line.split("=", 1)[1].strip("'"))
 
 
 def test_cmd_save_position():
@@ -118,15 +72,6 @@ def test_cmd_build_ndc_prompt(monkeypatch):
         assert "## 10:30 | did stuff" in content
         assert "details" in content
 
-
-def test_cmd_parse_haiku_empty_stdin_raises():
-    """Regression: empty stdin (broken pipe) must raise, not return zeros."""
-    with patch("sys.stdin", StringIO("")):
-        with pytest.raises(RuntimeError, match="invalid JSON"):
-            cmd_parse_haiku()
-
-
-# --- cmd_extract ---
 
 def test_cmd_extract_prints_shell_vars(capsys):
     fake_result = ExtractResult(
@@ -291,45 +236,6 @@ def test_main_no_args_exits_1():
     assert exc.value.code == 1
 
 
-# --- cmd_parse_haiku output_file branch (lines 100-102) ---
-
-def test_cmd_parse_haiku_with_output_file(capsys):
-    """When output_file is provided, text is also written to that path."""
-    haiku_json = json.dumps({
-        "result": "## 11:00 | wrote tests\nall green",
-        "usage": {
-            "input_tokens": 300,
-            "output_tokens": 60,
-            "cache_read_input_tokens": 0,
-        },
-        "total_cost_usd": 0.003,
-    })
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as out_f:
-        out_path = out_f.name
-
-    try:
-        with patch("sys.stdin", StringIO(haiku_json)):
-            cmd_parse_haiku(output_file=out_path)
-
-        output = capsys.readouterr().out
-        assert "IS_SKIP=false" in output
-
-        content = open(out_path).read()
-        assert "## 11:00 | wrote tests" in content
-        assert "all green" in content
-
-        # Cleanup the auto temp file too
-        for line in output.strip().split("\n"):
-            if line.startswith("HAIKU_TEXT_FILE="):
-                p = line.split("=", 1)[1].strip("'")
-                if os.path.exists(p):
-                    os.unlink(p)
-    finally:
-        os.unlink(out_path)
-
-
-# --- cmd_consolidate: today/done filtering (line 130) and existing recent/archive (lines 140-146) ---
-
 def test_cmd_consolidate_skips_today_file(capsys):
     """A staging file named with today's date is excluded from consolidation."""
     from datetime import datetime
@@ -418,20 +324,6 @@ def test_main_dispatches_build_ndc_prompt():
         with patch("sys.argv", ["shell.py", "build-ndc-prompt", "mem.md", "out.txt"]):
             main()
     mock_fn.assert_called_once_with(memory_file="mem.md", output_file="out.txt")
-
-
-def test_main_dispatches_parse_haiku_no_output_file(capsys):
-    with patch("pipeline.shell.cmd_parse_haiku") as mock_fn:
-        with patch("sys.argv", ["shell.py", "parse-haiku"]):
-            main()
-    mock_fn.assert_called_once_with(output_file="")
-
-
-def test_main_dispatches_parse_haiku_with_output_file():
-    with patch("pipeline.shell.cmd_parse_haiku") as mock_fn:
-        with patch("sys.argv", ["shell.py", "parse-haiku", "/tmp/out.txt"]):
-            main()
-    mock_fn.assert_called_once_with(output_file="/tmp/out.txt")
 
 
 def test_main_dispatches_save_position():

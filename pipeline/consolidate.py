@@ -22,7 +22,7 @@ Typical usage::
 from __future__ import annotations
 
 from .prompts import build_consolidation_prompt
-from .haiku import call_haiku
+from .llm import call_haiku
 from .types import ConsolidationResult, TokenUsage
 
 
@@ -46,7 +46,7 @@ def consolidate(
         RuntimeError: If the Haiku call fails or times out.
     """
     prompt = build_consolidation_prompt(staging_contents, recent, archive)
-    result = call_haiku(prompt, timeout=180)
+    result = call_haiku(prompt, timeout=180, max_output_tokens=2000)
 
     recent_new, archive_new = parse_consolidation_response(result.text)
 

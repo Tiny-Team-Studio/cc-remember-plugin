@@ -24,10 +24,10 @@
 #   REMEMBER_DEBUG   Set to "1" for verbose logging (default: 1)
 #
 # DEPENDENCIES
-#   python3, claude CLI (Haiku), git, date, mktemp
+#   python3, google-genai (Gemini), git, date, mktemp
 #   Sources: log.sh (logging, safe_eval, config)
-#   Python: pipeline.shell (extract, build-prompt, parse-haiku, save-position,
-#           build-ndc-prompt)
+#   Python: pipeline.shell (extract, build-prompt, save-position, build-ndc-prompt)
+#           pipeline.llm (call_haiku → Gemini Flash-Lite)
 #
 # EXIT CODES
 #   0   Success (or skip due to cooldown/threshold/SKIP response)
@@ -43,7 +43,7 @@
 #     1. Extract exchanges from session JSONL
 #     2. Get last memory entry (for dedup context)
 #     3. Build summarization prompt
-#     4. Call Haiku (sandboxed: cwd=/tmp, no tools, max-turns 1)
+#     4. Call Gemini Flash-Lite via google-genai SDK
 #     5. Parse response (detect SKIP vs. content)
 #     6. Append to now.md + save position
 #     7. NDC compression (hourly, background subshell)
@@ -163,29 +163,32 @@ cd "$PIPELINE_DIR" && $PYTHON -m pipeline.shell build-prompt "$EXTRACT_FILE" "$T
 [ ! -s "$TMP_PROMPT" ] && { log "prompt" "ERROR: empty"; exit 1; }
 head -1 "$TMP_PROMPT" | grep -q '{{TIME}}\|{{BRANCH}}' && { log "prompt" "ERROR: unsubstituted placeholders in prompt header"; exit 1; }
 
-# --- Step 4: Call Haiku ---
-log "haiku" "calling (branch: $BRANCH)"
-HAIKU_STDERR=$(mktemp "${TMPDIR:-/tmp}"/remember-haiku-err-XXXXXX.txt)
-CLEANUP_FILES+=("$HAIKU_STDERR")
+# --- Step 4: Call Gemini Flash-Lite ---
+log "llm" "calling gemini (branch: $BRANCH)"
+HAIKU_TEXT_FILE=$(mktemp "${TMPDIR:-/tmp}"/remember-llm-text-XXXXXX.txt)
+LLM_ERR=$(mktemp "${TMPDIR:-/tmp}"/remember-llm-err-XXXXXX.txt)
+CLEANUP_FILES+=("$HAIKU_TEXT_FILE" "$LLM_ERR")
 
-HAIKU_JSON=$(cd /tmp && env -u CLAUDECODE claude -p \
-    --model haiku --allowedTools "" --max-turns 1 \
-    --output-format json \
-    --mcp-config '{"mcpServers":{}}' --strict-mcp-config \
-    2>"$HAIKU_STDERR" < "$TMP_PROMPT")
-HAIKU_EXIT=$?
-
-if [ "$HAIKU_EXIT" -ne 0 ]; then
-    log "haiku" "ERROR: exit $HAIKU_EXIT — $(head -1 "$HAIKU_STDERR")"; exit 1
-fi
-
-# --- Step 5: Parse response ---
-safe_eval <<< "$(echo "$HAIKU_JSON" | (cd "$PIPELINE_DIR" && $PYTHON -m pipeline.shell parse-haiku))"
-CLEANUP_FILES+=("$HAIKU_TEXT_FILE")
+LLM_RESULT=$(cd "$PIPELINE_DIR" && $PYTHON - "$TMP_PROMPT" "$HAIKU_TEXT_FILE" <<'PYEOF' 2>"$LLM_ERR"
+import sys
+sys.path.insert(0, '.')
+from pipeline.llm import call_haiku
+prompt = open(sys.argv[1], encoding='utf-8').read()
+r = call_haiku(prompt)
+with open(sys.argv[2], 'w', encoding='utf-8') as f:
+    f.write(r.text)
+print(f'IS_SKIP={"true" if r.is_skip else "false"}')
+print(f'TK_IN={r.tokens.input}')
+print(f'TK_OUT={r.tokens.output}')
+print(f'TK_CACHE={r.tokens.cache}')
+print(f'TK_COST={r.tokens.cost_usd:.6f}')
+PYEOF
+) || { log "llm" "ERROR: gemini call failed — $(head -1 "$LLM_ERR")"; exit 1; }
+safe_eval <<< "$LLM_RESULT"
 log_tokens "tokens" "$TK_IN" "$TK_OUT" "$TK_CACHE" "$TK_COST"
 
 HAIKU_TEXT=$(cat "$HAIKU_TEXT_FILE")
-[ -z "$HAIKU_TEXT" ] && { log "haiku" "ERROR: empty response"; exit 1; }
+[ -z "$HAIKU_TEXT" ] && { log "llm" "ERROR: empty response"; exit 1; }
 
 # --- Step 5b: Validate format (warn, never discard) ---
 if [ "$IS_SKIP" != "true" ]; then
@@ -197,7 +200,7 @@ fi
 
 # --- Step 6: Handle SKIP ---
 if [ "$IS_SKIP" = "true" ]; then
-    log "haiku" "SKIP — position → $POSITION"
+    log "llm" "SKIP — position → $POSITION"
     cd "$PIPELINE_DIR" && $PYTHON -m pipeline.shell save-position "$LAST_SAVE_FILE" "$SESSION_ID" "$POSITION"
     exit 0
 fi
@@ -232,32 +235,30 @@ if [ "$RUN_NDC" = true ]; then
     cd "$PIPELINE_DIR" && $PYTHON -m pipeline.shell build-ndc-prompt "$MEMORY_FILE" "$NDC_PROMPT"
 
     if [ -s "$NDC_PROMPT" ]; then
-        (set +e  # don't inherit set -e — claude -p non-zero exit must not kill the subshell
+        (set +e
+            NDC_OUT_FILE=$(mktemp "${TMPDIR:-/tmp}"/remember-ndc-out-XXXXXX.txt)
             NDC_ERR=$(mktemp "${TMPDIR:-/tmp}"/remember-ndc-err-XXXXXX.txt)
-            NDC_JSON=$(cd /tmp && env -u CLAUDECODE claude -p \
-                --allowedTools "" --model haiku --max-turns 1 \
-                --output-format json \
-                --mcp-config '{"mcpServers":{}}' --strict-mcp-config \
-                2>"$NDC_ERR" < "$NDC_PROMPT")
 
-            if [ $? -ne 0 ]; then
-                log "ndc" "ERROR: haiku exit $? — $(head -1 "$NDC_ERR" 2>/dev/null)"
+            cd "$PIPELINE_DIR" && $PYTHON - "$NDC_PROMPT" "$NDC_OUT_FILE" <<'PYEOF' 2>"$NDC_ERR"
+import sys
+sys.path.insert(0, '.')
+from pipeline.llm import call_haiku
+prompt = open(sys.argv[1], encoding='utf-8').read()
+r = call_haiku(prompt, max_output_tokens=1000)
+with open(sys.argv[2], 'w', encoding='utf-8') as f:
+    f.write(r.text)
+PYEOF
+
+            if [ -s "$NDC_OUT_FILE" ]; then
+                [ -s "$TODAY_FILE" ] && echo "" >> "$TODAY_FILE"
+                cat "$NDC_OUT_FILE" >> "$TODAY_FILE"
+                : > "$MEMORY_FILE"
+                NDC_OUT_BYTES=$(wc -c < "$NDC_OUT_FILE" | tr -d ' ')
+                [ "$NDC_SRC_BYTES" -gt 0 ] && log "ndc" "${NDC_SRC_BYTES}→${NDC_OUT_BYTES}b (-$(( (NDC_SRC_BYTES - NDC_OUT_BYTES) * 100 / NDC_SRC_BYTES ))%)"
             else
-                safe_eval <<< "$(echo "$NDC_JSON" | (cd "$PIPELINE_DIR" && $PYTHON -m pipeline.shell parse-haiku))"
-                NDC_TEXT=$(cat "$HAIKU_TEXT_FILE")
-                if [ -n "$NDC_TEXT" ]; then
-                    [ -s "$TODAY_FILE" ] && echo "" >> "$TODAY_FILE"
-                    cat "$HAIKU_TEXT_FILE" >> "$TODAY_FILE"
-                    : > "$MEMORY_FILE"
-                    log_tokens "ndc" "$TK_IN" "$TK_OUT" "$TK_CACHE" "$TK_COST"
-                    NDC_OUT_BYTES=$(wc -c < "$HAIKU_TEXT_FILE" | tr -d ' ')
-                    [ "$NDC_SRC_BYTES" -gt 0 ] && log "ndc" "${NDC_SRC_BYTES}→${NDC_OUT_BYTES}b (-$(( (NDC_SRC_BYTES - NDC_OUT_BYTES) * 100 / NDC_SRC_BYTES ))%)"
-                else
-                    log "ndc" "ERROR: produced empty result"
-                fi
-                rm -f "$HAIKU_TEXT_FILE"
+                log "ndc" "ERROR: $(head -1 "$NDC_ERR" 2>/dev/null || echo 'empty result')"
             fi
-            rm -f "$NDC_PROMPT" "$NDC_ERR"
+            rm -f "$NDC_PROMPT" "$NDC_OUT_FILE" "$NDC_ERR"
         ) &
         log "ndc" "running (PID $!)"
     else

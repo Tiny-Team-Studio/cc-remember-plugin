@@ -28,9 +28,9 @@
 # ============================================================================
 
 # --- Resolve paths ---
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-${CLAUDE_PROJECT_DIR:-.}/.claude/remember}"
-PROJECT="${CLAUDE_PROJECT_DIR:-.}"
-PROJECT_DIR="$PROJECT"
+source "$(dirname "$0")/resolve-paths.sh"
+PLUGIN_ROOT="$PIPELINE_DIR"
+PROJECT="$PROJECT_DIR"
 source "$PLUGIN_ROOT/scripts/log.sh" 2>/dev/null
 
 # --- Timestamp + context injection ---

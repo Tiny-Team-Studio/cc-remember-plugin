@@ -41,11 +41,11 @@ _PLUGIN_ROOT_CANDIDATE="$(cd "$_SCRIPT_DIR/.." && pwd)"
 
 if [ -n "$CLAUDE_PLUGIN_ROOT" ]; then
     PIPELINE_DIR="$CLAUDE_PLUGIN_ROOT"
-elif [ -f "$_PLUGIN_ROOT_CANDIDATE/pipeline/haiku.py" ]; then
+elif [ -f "$_PLUGIN_ROOT_CANDIDATE/pipeline/llm.py" ]; then
     # Local install: scripts/ is one level below the plugin root
     PIPELINE_DIR="$_PLUGIN_ROOT_CANDIDATE"
 else
-    _msg="FATAL: Cannot resolve plugin root. CLAUDE_PLUGIN_ROOT is not set and $_PLUGIN_ROOT_CANDIDATE/pipeline/haiku.py does not exist."
+    _msg="FATAL: Cannot resolve plugin root. CLAUDE_PLUGIN_ROOT is not set and $_PLUGIN_ROOT_CANDIDATE/pipeline/llm.py does not exist."
     echo "$_msg" >&2
     # Try to log if we can find a log directory
     _log_dir="${CLAUDE_PROJECT_DIR:-.}/.remember/logs"

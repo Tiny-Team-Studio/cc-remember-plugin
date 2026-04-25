@@ -17,7 +17,6 @@ Available subcommands::
     extract         Extract session exchanges
     build-prompt    Build save-summary prompt file
     build-ndc-prompt Build NDC compression prompt file
-    parse-haiku     Parse Haiku JSON response from stdin
     save-position   Write position to last-save.json
     consolidate     Run full consolidation pipeline
 
@@ -30,7 +29,6 @@ import os
 import sys
 
 from .extract import extract_session
-from .haiku import _parse_response
 from .prompts import build_save_prompt, build_ndc_prompt
 
 
@@ -122,42 +120,6 @@ def cmd_build_ndc_prompt(memory_file: str, output_file: str) -> None:
     prompt = build_ndc_prompt(content)
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(prompt)
-
-
-def cmd_parse_haiku(output_file: str = "") -> None:
-    """Parse Haiku JSON response from stdin and print shell variables.
-
-    Reads the raw JSON from stdin, parses it into a HaikuResult, writes
-    the text to a temp file (since it can contain newlines, quotes, and
-    arbitrary content), and prints metadata as shell variables.
-
-    Args:
-        output_file: If non-empty, also writes the Haiku text to this
-            path (in addition to the temp file).
-
-    Prints:
-        HAIKU_TEXT_FILE (path to temp file), IS_SKIP (true/false),
-        TK_IN, TK_OUT, TK_CACHE, TK_COST.
-    """
-    import tempfile
-    raw = sys.stdin.read()
-    r = _parse_response(raw)
-
-    # Write text to temp file (can contain newlines, quotes, anything)
-    fd, text_file = tempfile.mkstemp(prefix="remember-haiku-text-", suffix=".txt")
-    with os.fdopen(fd, "w", encoding="utf-8") as f:
-        f.write(r.text)
-
-    print(f"HAIKU_TEXT_FILE={_shell_escape(text_file)}")
-    print(f"IS_SKIP={'true' if r.is_skip else 'false'}")
-    print(f"TK_IN={r.tokens.input}")
-    print(f"TK_OUT={r.tokens.output}")
-    print(f"TK_CACHE={r.tokens.cache}")
-    print(f"TK_COST={r.tokens.cost_usd:.6f}")
-
-    if output_file:
-        with open(output_file, "w", encoding="utf-8") as f:
-            f.write(r.text)
 
 
 def cmd_save_position(last_save_file: str, session_id: str, position: int) -> None:
@@ -273,9 +235,6 @@ def main() -> None:
         )
     elif cmd == "build-ndc-prompt":
         cmd_build_ndc_prompt(memory_file=sys.argv[2], output_file=sys.argv[3])
-    elif cmd == "parse-haiku":
-        output_file = sys.argv[2] if len(sys.argv) > 2 else ""
-        cmd_parse_haiku(output_file=output_file)
     elif cmd == "save-position":
         cmd_save_position(
             last_save_file=sys.argv[2],

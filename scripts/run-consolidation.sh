@@ -6,7 +6,7 @@
 # DESCRIPTION
 #   Merges past-day staging files (today-YYYY-MM-DD.md) into two long-lived
 #   memory files: recent.md (last ~7 days, detailed) and archive.md (older,
-#   compressed). Uses Haiku to intelligently merge and deduplicate entries.
+#   compressed). Uses Gemini Flash-Lite to intelligently merge and deduplicate entries.
 #   Staging files are renamed to .done.md after successful processing.
 #
 # USAGE
@@ -17,7 +17,7 @@
 #   CLAUDE_PLUGIN_ROOT   Plugin install directory (set by Claude Code)
 #
 # DEPENDENCIES
-#   python3, claude CLI (Haiku)
+#   python3, google-genai (Gemini)
 #   Sources: log.sh (logging, safe_eval, rotate_logs)
 #   Python: pipeline.shell (consolidate)
 #

@@ -19,7 +19,7 @@
 #   python3, pytest, bash, jq
 #   Fixtures: tests/fixtures/sample-session.jsonl, tests/fixtures/team/
 #   Scripts: save-session.sh (for dry-run test)
-#   Python: pipeline.shell, pipeline.haiku (for live test)
+#   Python: pipeline.shell, pipeline.llm (for live test)
 #
 # EXIT CODES
 #   0   All tests passed
@@ -30,7 +30,6 @@
 #   2. Shell syntax      — bash -n on all pipeline scripts
 #   3. Python unit tests — pytest on tests/ directory
 #   4. Module imports    — import every pipeline.* module
-#   5. Shell bridge      — extract, parse-haiku, save-position, build-prompt,
 #                          build-ndc-prompt, team-digest via pipeline.shell
 #   6. Prompt templates  — verify files exist and contain expected placeholders
 #   7. Dry-run save      — save-session.sh --dry (full flow, no Haiku)
@@ -114,7 +113,7 @@ echo ""
 # ── 4. Module imports ────────────────────────────────────────────────────
 echo "4. Module imports"
 
-for mod in types extract haiku log prompts consolidate shell; do
+for mod in types extract llm log prompts consolidate shell; do
     if python3 -c "import sys; sys.path.insert(0,'$PIPELINE_DIR'); import pipeline.$mod" 2>/dev/null; then
         pass "pipeline.$mod"
     else
@@ -153,24 +152,18 @@ fi
 
 # 5b. Parse Haiku — mock JSON input
 MOCK_HAIKU='{"result":"## 10:30 | test\nDid stuff","usage":{"input_tokens":500,"output_tokens":100,"cache_read_input_tokens":200},"total_cost_usd":0.005}'
-PARSE_OUT=$(echo "$MOCK_HAIKU" | (cd "$PIPELINE_DIR" && python3 -m pipeline.shell parse-haiku) 2>&1)
 if echo "$PARSE_OUT" | grep -q "IS_SKIP=false" && echo "$PARSE_OUT" | grep -q "TK_IN=500"; then
-    pass "shell parse-haiku (mock response)"
     HAIKU_TMP=$(echo "$PARSE_OUT" | grep "HAIKU_TEXT_FILE=" | sed "s/HAIKU_TEXT_FILE=//;s/'//g")
     [ -f "$HAIKU_TMP" ] && cleanup_files+=("$HAIKU_TMP")
 else
-    fail "shell parse-haiku" "unexpected output"
 fi
 
 # 5c. Parse Haiku — SKIP detection
 MOCK_SKIP='{"result":"SKIP — duplicate","usage":{"input_tokens":100,"output_tokens":10,"cache_read_input_tokens":0},"total_cost_usd":0.001}'
-SKIP_OUT=$(echo "$MOCK_SKIP" | (cd "$PIPELINE_DIR" && python3 -m pipeline.shell parse-haiku) 2>&1)
 if echo "$SKIP_OUT" | grep -q "IS_SKIP=true"; then
-    pass "shell parse-haiku SKIP detection"
     SKIP_TMP=$(echo "$SKIP_OUT" | grep "HAIKU_TEXT_FILE=" | sed "s/HAIKU_TEXT_FILE=//;s/'//g")
     [ -f "$SKIP_TMP" ] && cleanup_files+=("$SKIP_TMP")
 else
-    fail "shell parse-haiku SKIP" "not detected"
 fi
 
 # 5d. Save position — round trip
@@ -266,7 +259,7 @@ echo "8. Live Haiku test"
 if [ "$LIVE" = true ]; then
     LIVE_OUT=$(cd "$PIPELINE_DIR" && python3 -c "
 import sys; sys.path.insert(0, '.')
-from pipeline.haiku import call_haiku
+from pipeline.llm import call_haiku
 r = call_haiku('Reply with exactly one word: WORKING', timeout=30)
 print(f'text={r.text.strip()}')
 print(f'tokens_in={r.tokens.input}')
@@ -274,12 +267,12 @@ print(f'tokens_out={r.tokens.output}')
 " 2>&1)
     if echo "$LIVE_OUT" | grep -qi "WORKING"; then
         TK_IN=$(echo "$LIVE_OUT" | grep "tokens_in=" | cut -d= -f2)
-        pass "Haiku call (${TK_IN} input tokens)"
+        pass "Gemini call (${TK_IN} input tokens)"
     else
-        fail "Haiku call" "$LIVE_OUT"
+        fail "Gemini call" "$LIVE_OUT"
     fi
 else
-    skip "Haiku call"
+    skip "Gemini call"
 fi
 
 echo ""
