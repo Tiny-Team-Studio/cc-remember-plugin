@@ -1,14 +1,10 @@
-Apply maximum non-destructive compression. Rules:
-- Keep ALL facts, ALL refs, ALL verbs, ALL relationships. Zero information loss.
-- Drop: articles (a/the/an), prepositions where context is clear, filler words, prose connectors
-- Use shortest form preserving same semantic vector: conf, env, MR, infra, impl, perm, EM, etc
-- No prose. Raw signal. Like developer shorthand notes.
-- Group entries by subject: if multiple entries describe the same work (same issue, same feature, same file), merge into ONE time-blocked entry (e.g. 08:48-09:22). This is the biggest compression win — 5 entries about the same skill becoming 1 entry.
-- Parentheses for context: "script.sh (dev detect via git conf)"
-- Semicolons to separate facts within one entry
-- Preserve ## timestamp | branch format
-- Maintain chronological order — entries must appear oldest to newest
-- Every verb, every object, every causal link must survive
+Compress these memory entries into a shorter daily summary. Rules:
+- Keep ALL topics, ALL decisions, ALL facts, ALL user preferences. Zero information loss.
+- Group entries about the same conversation topic into ONE time-blocked entry (e.g. 12:56-13:48). This is the biggest compression win — 5 entries about the same back-and-forth becoming 1 entry.
+- Write in plain readable English — this gets injected into the bot's next session as context.
+- Preserve ## timestamp | branch format.
+- Maintain chronological order.
+- Drop redundant detail but keep the substance of what was discussed and decided.
 No preamble. Just the compressed output.
 
 Text:

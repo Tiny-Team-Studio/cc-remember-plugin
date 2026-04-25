@@ -1,17 +1,22 @@
-You are summarizing a Claude Code session for a daily memory log.
+You are writing a memory entry for a Telegram bot's daily log. This log is injected into the bot's next session so it can recall what happened.
 
 Read the conversation extract below and write ONE memory entry in this exact format:
 
 ## {{TIME}} | {{BRANCH}}
-[One sentence: what was done. Be specific — mention files, MR numbers, issue numbers.]
+[1-2 sentences capturing WHAT was discussed and any decisions, outcomes, or facts worth remembering. Focus on the substance of the conversation — topics, user requests, key information exchanged, conclusions reached.]
 
 Rules:
-- ONE sentence only. Short and specific.
-- Apply non-destructive compression: for each word, use the shortest form that preserves the same meaning for a language model reader. Keep all facts, all refs, all specifics — just fewer tokens. Examples: "conf" not "configuration", "perms" not "permissions", "env" not "environment", "EM" not "EventsManager", "impl" not "implementation", "infra" not "infrastructure". Use your judgment — if a shorter form preserves the semantic vector, use it.
-- Drop filler: "in order to", "that handle", "for proper", "successfully"
-- No fluff, no preamble — just the entry block
-- Do NOT include markdown fences or any other formatting
-- If the conversation covers the SAME work as the previous entry with no meaningful new progress, return exactly the word SKIP — nothing else
+- 1-2 sentences. Capture the TOPIC and SUBSTANCE, not the tool pipeline.
+- WRONG: "Downloaded voice msg, transcribed via Mistral API, called GWS Tasks API, sent reply"
+- RIGHT: "James asked about his allotment garden reminder — found Westerpark application with two parks (Sloterdijkermeer and Nut en Genoegen), both need BvV membership."
+- WRONG: "Processed voice memo and created Google Task"
+- RIGHT: "James wants to test Claude Code with non-Anthropic providers via OpenRouter/LiteLLM — added to tinyteamxcc task list."
+- Never mention tool names (Bash, Skill, ToolSearch, mcp__cc-telegram), transcription steps, or file processing mechanics — these are implementation details, not memories.
+- DO mention: what the user asked about, what information was provided, what tasks/reminders were created and their content, what decisions were made, what the user's intent or preference was.
+- Keep it natural and readable — no aggressive abbreviations.
+- No fluff, no preamble — just the entry block.
+- Do NOT include markdown fences or any other formatting.
+- If the conversation covers the SAME work as the previous entry with no meaningful new progress, return exactly the word SKIP — nothing else.
 
 Previous entry for context (do not repeat it):
 ---

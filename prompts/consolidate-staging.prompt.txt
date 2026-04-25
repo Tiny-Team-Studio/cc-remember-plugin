@@ -19,8 +19,8 @@ All file contents are provided below. You have NO file access — work only with
 
 For EACH staging file, compress the full day into ONE entry:
 - Header: `## YYYY-MM-DD`
-- Body: 2-4 sentences covering: deliverables, key decisions, state changes
-- Drop: conversation flow, intermediate steps, file paths, context percentages
+- Body: 2-4 sentences covering: what the user asked about, key topics discussed, decisions made, tasks created, information provided.
+- Drop: tool call details, intermediate processing steps, file paths.
 
 Append the new day entries to the existing recent.md content.
 
@@ -29,18 +29,10 @@ Append the new day entries to the existing recent.md content.
 Any entry in recent.md older than 3 days gets compressed into archive.md:
 - Group by week (Monday-Sunday)
 - Header: `## Week of YYYY-MM-DD`
-- Body: 3-5 sentences per week covering: conventions, patterns, infrastructure changes, major deliverables
-- Drop: individual file changes, daily details
+- Body: 3-5 sentences per week covering: main topics and conversations, recurring user interests, key decisions or preferences expressed.
+- Drop: individual timestamps, per-conversation details.
 
 Remove the rotated entries from recent.md.
-
-### Step 3: Identity candidates
-
-If you notice a moment that seems identity-defining, add it at the END of the recent.md section as:
-```
-## Identity Candidates
-- IDENTITY CANDIDATE: [one-line description]
-```
 
 ## Output format
 
@@ -64,4 +56,4 @@ Return EXACTLY this structure — no other text, no explanations:
 - Keep recent section under 600 tokens total
 - Keep archive section under 400 tokens total
 - Preserve the `# Recent` and `# Archive` headers
-- Apply non-destructive compression: shortest form preserving meaning. Common: conf, MR, perm, infra, docs, impl, dev, env, app, repo, auth, i18n, EM, entity, refactor.
+- Write in plain readable English — no aggressive abbreviations or developer shorthand
