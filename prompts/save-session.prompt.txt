@@ -10,7 +10,7 @@ Rules:
 - WRONG: "Downloaded voice msg, transcribed via Mistral API, called GWS Tasks API, sent reply"
 - RIGHT: "James asked about his allotment garden reminder — found Westerpark application with two parks (Sloterdijkermeer and Nut en Genoegen), both need BvV membership."
 - WRONG: "Processed voice memo and created Google Task"
-- RIGHT: "James wants to test Claude Code with non-Anthropic providers via OpenRouter/LiteLLM — added to tinyteamxcc task list."
+- RIGHT: "James wants to test Claude Code with non-Anthropic providers via OpenRouter/LiteLLM — added to tinyteamxtim task list."
 - Never mention tool names (Bash, Skill, ToolSearch, mcp__cc-telegram), transcription steps, or file processing mechanics — these are implementation details, not memories.
 - DO mention: what the user asked about, what information was provided, what tasks/reminders were created and their content, what decisions were made, what the user's intent or preference was.
 - Keep it natural and readable — no aggressive abbreviations.
