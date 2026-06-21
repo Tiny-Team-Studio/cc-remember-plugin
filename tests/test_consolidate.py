@@ -4,9 +4,15 @@ import os
 import sys
 from unittest.mock import patch, MagicMock
 
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from pipeline.consolidate import parse_consolidation_response, consolidate
+from pipeline.consolidate import (
+    parse_consolidation_response,
+    consolidate,
+    ConsolidationSkipped,
+)
 from pipeline.types import HaikuResult, TokenUsage, ConsolidationResult
 
 
@@ -43,12 +49,17 @@ Did stuff."""
     assert archive == ""
 
 
-def test_parse_fallback_no_markers():
+def test_parse_no_markers_raises():
+    """Non-conforming response (no ===RECENT=== marker) is rejected, not written (upstream #89)."""
     text = "## 2026-03-12\nSome content without markers"
-    recent, archive = parse_consolidation_response(text)
-    assert "2026-03-12" in recent
-    assert recent.startswith("# Recent")
-    assert archive == ""
+    with pytest.raises(ConsolidationSkipped):
+        parse_consolidation_response(text)
+
+
+def test_parse_skip_raises():
+    """A bare SKIP response is rejected so staging files are preserved."""
+    with pytest.raises(ConsolidationSkipped):
+        parse_consolidation_response("SKIP")
 
 
 def test_parse_preserves_headers():
@@ -81,9 +92,9 @@ also no header"""
     assert archive.startswith("# Archive")
 
 
-def test_parse_empty_response():
-    recent, archive = parse_consolidation_response("")
-    assert archive == ""
+def test_parse_empty_response_raises():
+    with pytest.raises(ConsolidationSkipped):
+        parse_consolidation_response("")
 
 
 def test_parse_identity_candidates():
@@ -125,15 +136,11 @@ def test_consolidate_returns_consolidation_result():
     assert result.tokens.input == 100
 
 
-def test_parse_archive_only_marker_no_recent_marker():
-    """===ARCHIVE=== without ===RECENT=== falls through to the else branch — entire text treated as recent."""
+def test_parse_archive_only_marker_raises():
+    """===ARCHIVE=== without ===RECENT=== is non-conforming — rejected, not written."""
     text = "some content before\n===ARCHIVE===\n# Archive\narchive stuff"
-    recent, archive = parse_consolidation_response(text)
-    # No ===RECENT=== marker — full text lands in recent via else fallback
-    assert "some content before" in recent
-    assert recent.startswith("# Recent")
-    # archive marker is not parsed without the RECENT marker present
-    assert archive == ""
+    with pytest.raises(ConsolidationSkipped):
+        parse_consolidation_response(text)
 
 
 def test_parse_empty_sections_between_markers():

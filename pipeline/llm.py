@@ -1,7 +1,7 @@
 """Gemini Flash-Lite wrapper for summarization and compression.
 
 Replaces the upstream haiku.py which spawned nested `claude -p` subprocesses.
-Uses the google-genai SDK with Gemini 2.5 Flash-Lite for all summarization:
+Uses the google-genai SDK with Gemini 3.1 Flash-Lite for all summarization:
 session saves, NDC compression, and consolidation.
 
 Requires GEMINI_API_KEY in the environment (exported in client profile).
@@ -13,10 +13,12 @@ import os
 
 from .types import HaikuResult, TokenUsage
 
-MODEL = "gemini-2.5-flash-lite"
+MODEL = "gemini-3.1-flash-lite"
 
-INPUT_PRICE = 0.075 / 1_000_000
-OUTPUT_PRICE = 0.30 / 1_000_000
+# Pricing per token for cost logging only (not billing). GA gemini-3.1-flash-lite
+# list price: $0.25 / 1M input, $1.50 / 1M output.
+INPUT_PRICE = 0.25 / 1_000_000
+OUTPUT_PRICE = 1.50 / 1_000_000
 
 
 def call_haiku(

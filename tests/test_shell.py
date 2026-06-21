@@ -198,6 +198,29 @@ def test_cmd_consolidate_with_staging_files(capsys):
                         os.unlink(path)
 
 
+def test_cmd_consolidate_skip_preserves_staging(capsys):
+    """A ConsolidationSkipped (SKIP / non-conforming LLM response) must NOT
+    emit STAGING= lines — the shell rename step relies on their absence to
+    leave staging files in place for retry (upstream #89)."""
+    from pipeline.consolidate import ConsolidationSkipped
+
+    with tempfile.TemporaryDirectory() as d:
+        past_file = os.path.join(d, "today-2020-01-01.md")
+        with open(past_file, "w") as f:
+            f.write("old entry")
+
+        with patch("pipeline.consolidate.consolidate",
+                   side_effect=ConsolidationSkipped("non-conforming")):
+            cmd_consolidate(staging_dir=d, recent_file="/nonexistent", archive_file="/nonexistent")
+
+    output = capsys.readouterr().out
+    assert "STAGING_COUNT=0" in output
+    assert "CONSOLIDATION_SKIPPED=1" in output
+    # Critical: no STAGING= rename lines, no output temp files → nothing retired.
+    assert "STAGING=" not in output
+    assert "RECENT_OUT=" not in output
+
+
 # --- main ---
 
 # --- Format detection (mirrors save-session.sh Step 5b regex) ---

@@ -159,7 +159,7 @@ def cmd_consolidate(staging_dir: str, recent_file: str, archive_file: str) -> No
     import tempfile
     from datetime import datetime
 
-    from .consolidate import consolidate
+    from .consolidate import consolidate, ConsolidationSkipped
 
     today = datetime.now().strftime("%Y-%m-%d")
 
@@ -186,7 +186,16 @@ def cmd_consolidate(staging_dir: str, recent_file: str, archive_file: str) -> No
         with open(archive_file, encoding="utf-8") as f:
             archive = f.read()
 
-    result = consolidate(staging_contents, recent, archive)
+    try:
+        result = consolidate(staging_contents, recent, archive)
+    except ConsolidationSkipped:
+        # SKIP / non-conforming LLM response — do NOT write output or retire
+        # the staging files. Emitting no STAGING= lines leaves them in place
+        # for retry on the next session start. STAGING_COUNT=0 makes the shell
+        # exit cleanly without renaming anything.
+        print("STAGING_COUNT=0")
+        print("CONSOLIDATION_SKIPPED=1")
+        return
 
     # Write results to temp files
     fd_r, recent_out = tempfile.mkstemp(prefix="remember-recent-", suffix=".md")

@@ -26,6 +26,17 @@ from .llm import call_haiku
 from .types import ConsolidationResult, TokenUsage
 
 
+class ConsolidationSkipped(Exception):
+    """Raised when the LLM returns a SKIP or non-conforming consolidation
+    response. The caller MUST NOT write output or retire the staging files —
+    staging is preserved untouched and retried on the next session start.
+
+    Prevents the corruption class where a conversational reply, refusal, or
+    SKIP was written verbatim into recent.md/archive.md while the source
+    staging files were irreversibly renamed to .done.md (upstream #89).
+    """
+
+
 def consolidate(
     staging_contents: dict[str, str],
     recent: str,
@@ -58,13 +69,15 @@ def consolidate(
 
 
 def parse_consolidation_response(text: str) -> tuple[str, str]:
-    """Parse Haiku's structured response into recent and archive sections.
+    """Parse the LLM's structured response into recent and archive sections.
 
-    Splits on ``===RECENT===`` and ``===ARCHIVE===`` delimiters. If
-    delimiters are missing, falls back gracefully: missing archive treats
-    the entire response as recent; missing both delimiters uses the raw
-    text as recent. Ensures ``# Recent`` and ``# Archive`` headers are
-    present in the output.
+    Splits on the ``===RECENT===`` and ``===ARCHIVE===`` delimiters. The
+    ``===RECENT===`` delimiter is REQUIRED — a response that is empty, a
+    ``SKIP``, or missing that delimiter is treated as non-conforming and
+    raises :class:`ConsolidationSkipped`, so the caller leaves the staging
+    files untouched rather than writing garbage into recent.md/archive.md
+    and irreversibly retiring the source files (upstream #89). The archive
+    delimiter is optional (early days have nothing to rotate yet).
 
     Expected format::
 
@@ -77,25 +90,34 @@ def parse_consolidation_response(text: str) -> tuple[str, str]:
         ...content...
 
     Args:
-        text: Raw text response from Haiku.
+        text: Raw text response from the LLM.
 
     Returns:
         Tuple of ``(recent_content, archive_content)``, both stripped
         and with headers ensured. Archive may be empty if the model
         did not produce an archive section.
+
+    Raises:
+        ConsolidationSkipped: If the response is empty, a SKIP, or does not
+            contain the required ``===RECENT===`` delimiter.
     """
+    stripped = text.strip()
+    if not stripped or stripped.upper().startswith("SKIP"):
+        raise ConsolidationSkipped("LLM returned an empty or SKIP response")
+    if "===RECENT===" not in text:
+        raise ConsolidationSkipped(
+            "LLM response missing the required ===RECENT=== delimiter"
+        )
+
     recent = ""
     archive = ""
 
-    if "===RECENT===" in text and "===ARCHIVE===" in text:
+    if "===ARCHIVE===" in text:
         parts = text.split("===ARCHIVE===", 1)
         recent = parts[0].replace("===RECENT===", "").strip()
         archive = parts[1].strip()
-    elif "===RECENT===" in text:
-        recent = text.replace("===RECENT===", "").strip()
     else:
-        # Fallback: treat entire response as recent
-        recent = text.strip()
+        recent = text.replace("===RECENT===", "").strip()
 
     # Ensure headers are present
     if recent and not recent.startswith("# Recent"):
